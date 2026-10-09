@@ -1,0 +1,123 @@
+name: tvp-dev
+
+x-env: &default-env
+  NODE_ENV: development
+  TZ: Asia/Ho_Chi_Minh
+
+services:
+  mongodb:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports: ["27017:27017"]
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mongo-init:
+    image: mongo:7
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: "no"
+    entrypoint:
+      - bash
+      - -c
+      - |
+        mongosh --host mongodb:27017 --quiet --eval '
+          try { rs.status() } catch (e) {
+            rs.initiate({_id:"rs0",members:[{_id:0,host:"mongodb:27017"}]})
+          }'
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.1
+    ports: ["6333:6333"]
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports: ["9200:9200"]
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  rag:
+    build:
+      context: ../../rag
+    environment:
+      <<: *default-env
+      QDRANT_URL: http://qdrant:6333
+      RAG_SERVICE_TOKEN: ${RAG_SERVICE_TOKEN:-change-me-internal-hmac-secret}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
+    ports: ["8000:8000"]
+    depends_on:
+      - qdrant
+
+  api:
+    build:
+      context: ../../apps/api
+    environment:
+      <<: *default-env
+      API_PORT: 4000
+      MONGO_URI: mongodb://mongodb:27017/travelvietplaner?replicaSet=rs0
+      REDIS_URL: redis://redis:6379
+      ES_NODE: http://elasticsearch:9200
+      QDRANT_URL: http://qdrant:6333
+      RAG_URL: http://rag:8000
+      RAG_SERVICE_TOKEN: ${RAG_SERVICE_TOKEN:-change-me-internal-hmac-secret}
+      CORS_ORIGINS: http://localhost:3000
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads_data:/data/uploads
+    ports: ["4000:4000"]
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ../../apps/api
+    command: ["node", "dist/worker.js"]
+    environment:
+      <<: *default-env
+      MONGO_URI: mongodb://mongodb:27017/travelvietplaner?replicaSet=rs0
+      REDIS_URL: redis://redis:6379
+      ES_NODE: http://elasticsearch:9200
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
+  redis_data:
+  qdrant_data:
+  es_data:
+  uploads_data:

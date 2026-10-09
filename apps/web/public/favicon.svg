@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="travelvietplaner">
+  <title>travelvietplaner</title>
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="#3d7a5e"/>
+  <!-- Calligraphic T — compact, heavy strokes, centered lower -->
+  <!-- Thick crossbar -->
+  <line x1="9.5" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="3.8" stroke-linecap="round"/>
+  <!-- Tapered stem — thick top, curves to thin foot -->
+  <path d="M16 12 Q15.0 17.5 15.4 22" stroke="white" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+  <!-- Gold serif foot — wide calligraphic flourish -->
+  <path d="M13 22 Q15.4 23.2 18 22" stroke="#c8973a" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <!-- Gold nib left end of crossbar -->
+  <path d="M9.5 12 Q8.4 10.4 10.2 9.8" stroke="#c8973a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <!-- Gold nib right end of crossbar -->
+  <path d="M22.5 12 Q23.6 10.4 21.8 9.8" stroke="#c8973a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,171 @@
+name: tvp-prod
+
+x-restart: &restart
+  restart: unless-stopped
+
+x-env: &default-env
+  NODE_ENV: production
+  TZ: Asia/Ho_Chi_Minh
+
+services:
+  mongodb:
+    <<: *restart
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mongo-init:
+    image: mongo:7
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: "no"
+    entrypoint:
+      - bash
+      - -c
+      - |
+        mongosh --host mongodb:27017 --quiet --eval '
+          try { rs.status() } catch (e) {
+            rs.initiate({_id:"rs0",members:[{_id:0,host:"mongodb:27017"}]})
+          }'
+
+  redis:
+    <<: *restart
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  qdrant:
+    <<: *restart
+    image: qdrant/qdrant:v1.12.1
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  elasticsearch:
+    <<: *restart
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    <<: *restart
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+
+  rag:
+    <<: *restart
+    build:
+      context: ../../rag
+    environment:
+      <<: *default-env
+      QDRANT_URL: http://qdrant:6333
+      RAG_SERVICE_TOKEN: ${RAG_SERVICE_TOKEN:-change-me-internal-hmac-secret}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
+    depends_on:
+      - qdrant
+
+  api:
+    <<: *restart
+    build:
+      context: ../../apps/api
+    environment:
+      <<: *default-env
+      API_PORT: 4000
+      MONGO_URI: mongodb://mongodb:27017/travelvietplaner?replicaSet=rs0
+      REDIS_URL: redis://redis:6379
+      ES_NODE: http://elasticsearch:9200
+      QDRANT_URL: http://qdrant:6333
+      RAG_URL: http://rag:8000
+      RAG_SERVICE_TOKEN: ${RAG_SERVICE_TOKEN:-change-me-internal-hmac-secret}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost}
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - /data/uploads:/data/uploads
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    <<: *restart
+    build:
+      context: ../../apps/api
+    command: ["node", "dist/worker.js"]
+    environment:
+      <<: *default-env
+      MONGO_URI: mongodb://mongodb:27017/travelvietplaner?replicaSet=rs0
+      REDIS_URL: redis://redis:6379
+      ES_NODE: http://elasticsearch:9200
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+
+  web:
+    <<: *restart
+    build:
+      context: ../../apps/web
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-/api}
+    environment:
+      <<: *default-env
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      INTERNAL_API_URL: http://api:4000
+    depends_on:
+      - api
+
+  nginx:
+    <<: *restart
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+      - /data/uploads:/data/uploads:ro
+    depends_on:
+      - api
+      - web
+
+volumes:
+  mongo_data:
+  redis_data:
+  qdrant_data:
+  es_data:
+  minio_data:

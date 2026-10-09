@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* light */
+  --bg: 210 27% 97%;
+  --s1: 0 0% 100%;
+  --s2: 210 25% 95%;
+  --s3: 210 24% 91%;
+  --border: 210 25% 85%;
+  --text: 210 43% 8%;
+  --text-muted: 210 17% 42%;
+  --primary: 160 84% 30%;
+  --primary-fg: 0 0% 100%;
+  --ring: 160 84% 39%;
+}
+
+.dark {
+  --bg: 210 43% 8%;
+  --s1: 210 33% 12%;
+  --s2: 210 34% 16%;
+  --s3: 210 32% 19%;
+  --border: 210 27% 23%;
+  --text: 210 30% 92%;
+  --text-muted: 210 18% 64%;
+  --primary: 160 84% 39%;
+  --primary-fg: 0 0% 100%;
+  --ring: 158 64% 52%;
+}
+
+* {
+  box-sizing: border-box;
+  border-color: hsl(var(--border));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: hsl(var(--bg));
+  color: hsl(var(--text));
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Shimmer skeleton fill */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--s2)) 25%,
+    hsl(var(--s3)) 37%,
+    hsl(var(--s2)) 63%
+  );
+  background-size: 200% 100%;
+}
+
+/* Cursor-spotlight card: consumers set --x/--y on pointer move */
+.spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  background: radial-gradient(
+    240px circle at var(--x, 50%) var(--y, 50%),
+    hsl(var(--primary) / 0.15),
+    transparent 60%
+  );
+  pointer-events: none;
+}
+.spotlight:hover::before {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Display font utility — calligraphy style headings */
+.font-display {
+  font-family: var(--font-playfair);
+}
+
+/* ─── Custom scrollbars ─────────────────────────────────────── */
+
+/* Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--s1));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.6);
+}
+::-webkit-scrollbar-corner {
+  background: hsl(var(--s1));
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) hsl(var(--s1));
+}
+
+/* Form fields — the global track colour (--s1, white in light mode) reads as a
+   bright stripe against a field's --s2 surface and squares off its 12px radius.
+   Fields opt into a transparent track instead; the inset thumb keeps clear of
+   the rounded corners. */
+.field-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--text-muted) / 0.35) transparent;
+}
+.field-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.field-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.field-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--text-muted) / 0.35);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.field-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--text-muted) / 0.55);
+  background-clip: content-box;
+}
+
+/* Horizontal scroll containers — snap-scroll lists */
+.scroll-x-styled {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.4) transparent;
+}
+.scroll-x-styled::-webkit-scrollbar {
+  height: 4px;
+}
+.scroll-x-styled::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.4);
+  border-radius: 9999px;
+}
+.scroll-x-styled::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ─── Custom cursor ──────────────────────────────────────────── */
+.custom-cursor,
+.custom-cursor * {
+  cursor: none !important;
+}
+.tvp-cursor-dot.is-hovering {
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: hsl(38 65% 52%);
+}
+.tvp-cursor-ring.is-hovering {
+  width: 3rem;
+  height: 3rem;
+  border-color: hsl(38 65% 52% / 0.5);
+}
+@media (pointer: coarse) {
+  .tvp-cursor-dot,
+  .tvp-cursor-ring { display: none !important; }
+}
