@@ -15,7 +15,7 @@ const features = [
     icon: Sparkles,
     title: 'AI lập kế hoạch hành trình',
     paragraphs: [
-      'TravelVietPlaner sử dụng Claude AI để phân tích yêu cầu của bạn và tạo lịch trình du lịch chi tiết theo từng ngày. Chỉ cần mô tả bằng ngôn ngữ tự nhiên: "Mình muốn đi Hội An 4 ngày, thích ẩm thực và kiến trúc cổ, ngân sách tầm trung" — AI sẽ hiểu và trả về hành trình đầy đủ trong vài giây.',
+      'TravelVietPlaner sử dụng AI để phân tích yêu cầu của bạn và tạo lịch trình du lịch chi tiết theo từng ngày. Chỉ cần mô tả bằng ngôn ngữ tự nhiên: "Mình muốn đi Hội An 4 ngày, thích ẩm thực và kiến trúc cổ, ngân sách tầm trung" — AI sẽ hiểu và trả về hành trình đầy đủ trong vài giây.',
       'Hệ thống streaming SSE cho phép lịch trình hiện ra theo thời gian thực, từng dòng một — giống như đang được một chuyên gia du lịch tư vấn trực tiếp. AI hiểu ngữ cảnh sâu về tất cả 34 tỉnh thành Việt Nam, từ mùa mưa Tây Nguyên, lễ hội làng nghề đồng bằng sông Cửu Long đến điểm trekking ít người biết ở Hà Giang.',
       'Kết quả không chỉ là danh sách địa điểm mà là lịch trình đã tối ưu tuyến đường, gợi ý khung giờ tham quan, cảnh báo thời tiết theo mùa và ước tính chi phí thực tế cho từng hoạt động.',
     ],

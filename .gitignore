@@ -17,7 +17,7 @@ venv/
 .DS_Store
 Thumbs.db
 data/
-uploads/
+/uploads/
 secrets/*
 !secrets/.gitkeep
 *.pem
@@ -26,6 +26,5 @@ server.txt
 sock_token.txt
 admin.txt
 
-.claude/
 .serena/
 .superpowers/
